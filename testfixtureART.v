@@ -171,7 +171,7 @@ initial begin
 	$display("   ▄▀ ▐▌          ▀▀       ▀▀       █		The simulation didn't finish "); 
 	$display("  █   ▀       ▄▀▀▀▀▄    ▄    ▄▀▀▀▀▄   ▐▌          after #d cycles!!" `terminate_cycle); 
 	$display(" █           ▐   ▄  ▌    ▀▄ ▐   ▄ ▌   █"); 
-	$display("▐▌          ▄ ▀▄▄▄▄▀       ▌ ▀▄▄▄▄▀    ▐▌ 	Man you're taking waaaaaay to long..."); 
+	$display("▐▌          ▄ ▀▄▄▄▄▀       ▌ ▀▄▄▄▄▀    ▐▌ 	Man you're taking waaaaaay too long..."); 
 	$display("█            ▀▄▄▄        ▐     ▄▄▄▀   █"); 
 	$display("█    ▄▀       ▄▄      ▄▀ ▐   ▄▄       █"); 
 	$display("▐▌  ▀       ▄▀   ▐▀       ▀▌   ▀▄     █"); 
