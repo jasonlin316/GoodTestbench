@@ -184,7 +184,7 @@ initial begin
 	$display("   ▄▀ ▐▌          ▀▀       ▀▀       █		The simulation didn't finish after "); 
 	$display("  █   ▀       ▄▀▀▀▀▄    ▄    ▄▀▀▀▀▄   ▐▌	%d cycles!!",`terminate_cycle); 
 	$display(" █           ▐   ▄  ▌    ▀▄ ▐   ▄ ▌   █"); 
-	$display("▐▌          ▄ ▀▄▄▄▄▀       ▌ ▀▄▄▄▄▀    ▐▌ 	Man you're taking waaaaaay to long..."); 
+	$display("▐▌          ▄ ▀▄▄▄▄▀       ▌ ▀▄▄▄▄▀    ▐▌ 	Man you're taking waaaaaay too long..."); 
 	$display("█            ▀▄▄▄        ▐     ▄▄▄▀   █"); 
 	$display("█    ▄▀       ▄▄      ▄▀ ▐   ▄▄       █"); 
 	$display("▐▌  ▀       ▄▀   ▐▀       ▀▌   ▀▄     █"); 
