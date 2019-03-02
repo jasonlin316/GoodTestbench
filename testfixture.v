@@ -1,3 +1,7 @@
+/*****************************************
+Edit by Yi Chien Lin. 2019.
+NTUEE B05901054.
+******************************************/
 `timescale 1ns/10ps
 `define SDFFILE    "./SET_syn.sdf"    // Modify your sdf file name here
 `define cycle 10.0
@@ -9,7 +13,7 @@ module testfixture;
 `define central_pattern "./dat/Central_pattern.dat"
 `define radius_pattern "./dat/Radius_pattern.dat"
 `define  candidate_result_Length "./dat/candidate_result_Length.dat"
-
+//Input and output pattern
 
 reg clk = 0;
 reg rst;
@@ -48,7 +52,6 @@ initial begin
 end
 
 
-
 always #(`cycle/2) clk = ~clk;
 
 
@@ -83,6 +86,7 @@ for (k = 0; k<=63; k = k+1) begin
 				end
 end
 #(`cycle*2); 
+//Modify the above codes to your own testbench
      $display("--------------------------- Simulation Stops !!---------------------------");
      if (err_cnt) begin 
      	$display("============================================================================");
@@ -135,7 +139,6 @@ end
 	end
 $finish;
 end
-
 
 always@(err_cnt) begin
 	if (err_cnt == 10) begin
