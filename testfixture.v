@@ -1,89 +1,98 @@
 `timescale 1ns/10ps
+`define SDFFILE    "./SET_syn.sdf"    // Modify your sdf file name here
 `define cycle 10.0
 `define terminate_cycle 200000 // Modify your terminate ycle here
-`define SDFFILE    "./imgproc_syn.sdf" 
+
 
 module testfixture;
 
-`define golden "./data/golden.dat"
-`define  pattern "./data/pattern.dat"
+`define central_pattern "./dat/Central_pattern.dat"
+`define radius_pattern "./dat/Radius_pattern.dat"
+`define  candidate_result_Length "./dat/candidate_result_Length.dat"
+
 
 reg clk = 0;
 reg rst;
-
-reg [7:0]     orig_data;
-reg           orig_ready;
-
-wire          request;
-wire [13:0]   orig_addr;
-
-wire          imgproc_ready;
-wire [13:0]   imgproc_addr;
-wire [7:0]    imgproc_data;
-wire          finish;
+reg en;
+reg [7:0] central;
+reg [3:0] radius;
+wire busy;
+wire valid;
+wire [7:0] candidate;
 
 integer err_cnt;
 
-reg [7:0] pattern_mem [0:16383];
-reg [7:0] golden_mem  [0:16383];
-reg [7:0] imgproc_mem [0:16383];
+reg [7:0] central_pat_mem [0:63];
+reg [3:0] radius_pat_mem[0:63];
+reg [7:0] expected_mem [0:63];
 
 `ifdef SDF
 initial $sdf_annotate(`SDFFILE, u_set);
 `endif
 
 initial begin
-	$fsdbDumpfile("imgproc.fsdb");
-	$fsdbDumpvars;
-//    $dumpfile("imgproc.vcd");
-//   $dumpvars(0,testfixture); 
+//	$fsdbDumpfile("SET.fsdb");
+//	$fsdbDumpvars;
+    $dumpfile("SET.vcd");
+    $dumpvars(0,testfixture); 
 end
 
 initial begin
 	$timeformat(-9, 1, " ns", 9); //Display time in nanoseconds
-	$readmemh(`pattern, pattern_mem);
+	$readmemh(`central_pattern, central_pat_mem);
+	$readmemh(`radius_pattern, radius_pat_mem);
+
 	$display("--------------------------- [ Simulation Starts !! ] ---------------------------");
-    $readmemh(`golden, golden_mem);
+	$readmemh(`candidate_result_Length, expected_mem);
+
 end
+
+
 
 always #(`cycle/2) clk = ~clk;
 
 
-imgproc u_set( .clk(clk), .rst(rst), .orig_data(orig_data), .orig_ready(orig_ready), .request(request), .orig_addr(orig_addr), .imgproc_ready(imgproc_ready), .imgproc_addr(imgproc_addr), .imgproc_data(imgproc_data), .finish(finish) );
+SET u_set( .clk(clk), .rst(rst), .en(en), .central(central), .radius(radius), .busy(busy), .valid(valid), .candidate(candidate) );
+
 integer k;
 integer p;
-
 initial begin
-	
+	en = 0;
       	rst = 0;
 	err_cnt = 0;
 # `cycle;     
 	rst = 1;
-#(`cycle*2);
+#(`cycle*3);
 	rst = 0;
-
-wait(finish == 1);
-@(negedge clk);
-		for (k = 0; k<=16383; k = k+1)begin
-			if (imgproc_mem[k] === golden_mem[k])
-			$display(" Pattern %d is passed !", k);
-			else begin
-			$display(" Pattern %d failed !. Expected candidate = %d, but the Response candidate = %d !! ", k, golden_mem[k], imgproc_mem[k]);
-			err_cnt = err_cnt + 1;
-			end
-		end
-#(`cycle 2); 
+for (k = 0; k<=63; k = k+1) begin
+	@(negedge clk);
+	//change inputs at strobe point
+        #(`cycle/4)	wait(busy == 0);
+			en = 1;
+			central = central_pat_mem[k];                
+      			radius = radius_pat_mem[k];
+			#(`cycle) en = 0;
+			wait (valid == 1);
+          	//Wait for signal output
+          	@(negedge clk);
+				if (candidate === expected_mem[k])
+					$display(" Pattern %d is passed !", k);
+				else begin
+					$display(" Pattern %d failed !. Expected candidate = %d, but the Response candidate = %d !! ", k, expected_mem[k], candidate);
+					err_cnt = err_cnt + 1;
+				end
+end
+#(`cycle*2); 
      $display("--------------------------- Simulation Stops !!---------------------------");
      if (err_cnt) begin 
      	$display("============================================================================");
-     	$display("\n (T_T) ERROR found!! There are #d errors in total.\n"  err_cnt);
 		$display("             ▄▄▄▄▄▄▄ "); 
 		$display("         ▄▀▀▀       ▀▄"); 
-		$display("       ▄▀            ▀▄ 		ERROR found"); 
+		$display("       ▄▀            ▀▄ 		ERROR FOUND!!"); 
 		$display("      ▄▀          ▄▀▀▄▀▄"); 
 		$display("    ▄▀          ▄▀  ██▄▀▄"); 
-		$display("   ▄▀  ▄▀▀▀▄    █   ▀▀ █▀▄ 	There are #d errors in total."  err_cnt); 
-		$display("   █  █▄▄   █   ▀▄     ▐ █  "); 
+		$display("   ▄▀  ▄▀▀▀▄    █   ▀▀ █▀▄ 	There are"); 
+		$display("   █  █▄▄   █   ▀▄     ▐ █  %d errors in total.", err_cnt); 
 		$display("  ▐▌  █▀▀  ▄▀     ▀▄▄▄▄▀  █ "); 
 		$display("  ▐▌  █   ▄▀              █"); 
 		$display("  ▐▌   ▀▀▀                ▐▌"); 
@@ -99,6 +108,7 @@ wait(finish == 1);
      else begin 
         $display("============================================================================");
         $display("\n");
+        $display("\n");
         $display("/ /##########\                                  #########");
         $display("// /############/                           #############");
         $display("  /  (#############       /            ##################");
@@ -106,19 +116,19 @@ wait(finish == 1);
         $display("        /###########################################     ");
         $display("          //(#####################################(      ");
         $display("           (##################################(/         ");
-	$display("    ...   /####################################(         ");
-	$display("    ..    #####(   /###############(    ########(        ");
-	$display("         (#####     ###############     (########  //////");
-	$display(".        #######(  (################   (#########( //////");
-	$display(".       /###############/  (######################///////");
-	$display("       .    /############################/ ///(###( /////");
-	$display("//    . /////(##########################///////####  ////");
-	$display("      .  ////#########(       /#########(//////####(    /");
-	$display("       (#((###########(        (#########(((((######/ ///");
-	$display("       /###############(      /(####################( ///");
-	$display("/////// /#################(  (#######################    ");
-	$display("//////   (###########################################(   ");
-	$display("WOOOOOW  YOU  PASSED!!!");
+		$display("    ...   /####################################(         ");
+		$display("    ..    #####(   /###############(    ########(        ");
+		$display("         (#####     ###############     (########  //////");
+		$display(".        #######(  (################   (#########( //////");
+		$display(".       /###############/  (######################///////");
+		$display("       .    /############################/ ///(###( /////");
+		$display("//    . /////(##########################///////####  ////");
+		$display("      .  ////#########(       /#########(//////####(    /");
+		$display("       (#((###########(        (#########(((((######/ ///");
+		$display("       /###############(      /(####################( ///");
+		$display("/////// /#################(  (#######################    ");
+		$display("//////   (###########################################(   ");
+		$display("	^o^		WOOOOOW  YOU  PASSED!!!");
         $display("\n");
         $display("============================================================================");
         $finish;
@@ -130,7 +140,7 @@ end
 always@(err_cnt) begin
 	if (err_cnt == 10) begin
     $display("============================================================================");
-    	$display("      ▄▄           ▄▄  "); 
+    $display("      ▄▄           ▄▄  "); 
 	$display("       ██         ██ "); 
 	$display("        ██       ██ "); 
 	$display("          ██   ██ "); 
@@ -168,10 +178,10 @@ initial begin
 	$display("        ▄▄▀▀       ▄▄▄▄▄▄▄      ▀▄"); 
 	$display("      ▄▀         ▄▄▄▄▄▄▄▄▄▄▄      █			Time out!"); 
 	$display("    ▄▀     ▄▄▄▄▄▄▄            ▄▄▄▄▄█▄▄"); 
-	$display("   ▄▀ ▐▌          ▀▀       ▀▀       █		The simulation didn't finish "); 
-	$display("  █   ▀       ▄▀▀▀▀▄    ▄    ▄▀▀▀▀▄   ▐▌          after #d cycles!!" `terminate_cycle); 
+	$display("   ▄▀ ▐▌          ▀▀       ▀▀       █		The simulation didn't finish after "); 
+	$display("  █   ▀       ▄▀▀▀▀▄    ▄    ▄▀▀▀▀▄   ▐▌	%d cycles!!",`terminate_cycle); 
 	$display(" █           ▐   ▄  ▌    ▀▄ ▐   ▄ ▌   █"); 
-	$display("▐▌          ▄ ▀▄▄▄▄▀       ▌ ▀▄▄▄▄▀    ▐▌ 	Man you're taking waaaaaay too long..."); 
+	$display("▐▌          ▄ ▀▄▄▄▄▀       ▌ ▀▄▄▄▄▀    ▐▌ 	Man you're taking waaaaaay to long..."); 
 	$display("█            ▀▄▄▄        ▐     ▄▄▄▀   █"); 
 	$display("█    ▄▀       ▄▄      ▄▀ ▐   ▄▄       █"); 
 	$display("▐▌  ▀       ▄▀   ▐▀       ▀▌   ▀▄     █"); 
